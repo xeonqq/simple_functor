@@ -42,3 +42,12 @@ TEST(SimpleFunctorTest, StoreMemberFunction)
     simple_functor<int()> functor{std::bind(&Object::get, &obj)};
     EXPECT_EQ(functor(), 1);
 }
+
+TEST(SimpleFunctorTest, CopySimpleFunctor)
+{
+    auto lambda_func = [](int i) { return i * i; };
+    simple_functor<int(int)> functor{lambda_func};
+    simple_functor<int(int)> functor_copy = functor;
+    EXPECT_EQ(functor(2), 4);
+    EXPECT_EQ(functor_copy(2), 4);
+}
