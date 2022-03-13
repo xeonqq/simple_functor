@@ -48,6 +48,8 @@ class simple_functor<ReturnType(Args...)>
         : function_concept_{other.function_concept_->Clone()}
     {}
 
+    simple_functor(simple_functor &&other) : function_concept_{std::move(other.function_concept_)}
+    {}
     ReturnType operator()(Args... args) { function_concept_->Invoke(std::forward<Args>(args)...); }
 
   private:
