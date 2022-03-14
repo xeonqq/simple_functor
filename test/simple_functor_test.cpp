@@ -7,6 +7,23 @@ int free_func()
     return 42;
 }
 
+struct Functor
+{
+    int operator()() { return v; }
+    int v{8};
+};
+
+struct MoveOnlyFunctor
+{
+    MoveOnlyFunctor(const MoveOnlyFunctor &other) = delete;
+    MoveOnlyFunctor(MoveOnlyFunctor &&other)      = default;
+    MoveOnlyFunctor &operator=(MoveOnlyFunctor &&other) = default;
+    MoveOnlyFunctor &operator=(const MoveOnlyFunctor &other) = delete;
+    ~MoveOnlyFunctor()                                       = default;
+    int operator()() { return v; }
+    int v{8};
+};
+
 TEST(SimpleFunctorTest, StoreLambda)
 {
     auto lambda_func = [](int i) { return i * i; };
@@ -22,11 +39,6 @@ TEST(SimpleFunctorTest, StoreFreeFunction)
 
 TEST(SimpleFunctorTest, StoreFunctionObject)
 {
-    struct Functor
-    {
-        int operator()() { return v; }
-        int v{8};
-    };
     simple_functor<int()> functor{Functor{}};
     EXPECT_EQ(functor(), 8);
 }
@@ -59,4 +71,20 @@ TEST(SimpleFunctorTest, MoveSimpleFunctor)
     simple_functor<int(int)> functor_moved{std::move(functor)};
     EXPECT_EQ(functor_moved(2), 4);
     EXPECT_DEATH(functor(2), ".*");
+}
+
+TEST(SimpleFunctorTest, StoreMoveOnlyFunction)
+{
+    auto move_only = MoveOnlyFunctor{};
+    simple_functor<int()> functor{std::move(move_only)};
+    EXPECT_EQ(functor(), 8);
+}
+
+TEST(SimpleFunctorTest, CopySimpleFunctorWithMoveOnlyFunctionInside)
+{
+    auto move_only = MoveOnlyFunctor{};
+    simple_functor<int()> functor{std::move(move_only)};
+    auto test_call = [&]() { simple_functor<int()> functor_copy{functor}; };
+    EXPECT_EQ(functor(), 8);
+    EXPECT_THROW(test_call(), std::runtime_error);
 }

@@ -23,6 +23,9 @@ class simple_functor<ReturnType(Args...)>
     template <typename T>
     struct Model : public Concept
     {
+        using function_type                                  = T;
+        static constexpr bool is_callable_copy_constructable = std::is_copy_constructible<T>::value;
+
         template <typename U>
         Model(U &&model) : model_(std::forward<U>(model))
         {}
@@ -31,8 +34,19 @@ class simple_functor<ReturnType(Args...)>
 
         std::unique_ptr<Concept> Clone() const override
         {
-            return std::make_unique<Model<T>>(model_);
+            return Clone(std::integral_constant<bool, is_callable_copy_constructable>());
         };
+
+        std::unique_ptr<Concept> Clone(std::false_type) const
+        {
+            throw std::runtime_error("Can not copy move-only function");
+        }
+
+        std::unique_ptr<Concept> Clone(std::true_type) const
+        {
+            return std::make_unique<Model<T>>(model_);
+        }
+
         T model_;
     };
 
